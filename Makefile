@@ -1,7 +1,7 @@
 CONFIG ?= release
 APP := build/VolumeControl.app
 
-.PHONY: build app run install icon list test clean
+.PHONY: build app run install icon list snapshots test clean
 
 build:
 	swift build -c $(CONFIG)
@@ -24,6 +24,10 @@ icon:
 
 list: build
 	"$$(swift build -c $(CONFIG) --show-bin-path)/VolumeControl" --list
+
+snapshots: build
+	mkdir -p docs
+	"$$(swift build -c $(CONFIG) --show-bin-path)/VolumeControl" --snapshot docs
 
 test:
 	swift test

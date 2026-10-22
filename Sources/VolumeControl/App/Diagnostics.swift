@@ -50,14 +50,14 @@ enum Diagnostics {
             ("com.apple.Music", "Music", true, AppSetting(volume: 0.8, muted: false)),
             ("com.google.Chrome", "Google Chrome", true, AppSetting()),
             ("com.apple.Safari", "Safari", false, AppSetting(volume: 0.35, muted: false)),
-            ("com.tinyspeck.slackmacgap", "Slack", true, AppSetting(volume: 0.6, muted: true)),
+            ("us.zoom.xos", "zoom.us", true, AppSetting(volume: 0.6, muted: true)),
         ]
         controller.loadPreviewState(
             samples.map { id, name, playing, _ in
                 AudioAppItem(id: id, name: name, icon: icon(for: id), isPlaying: playing)
             },
             settings: Dictionary(uniqueKeysWithValues: samples.map { ($0.0, $0.3) }),
-            levels: ["com.apple.Music": 0.42, "com.google.Chrome": 0.93, "com.tinyspeck.slackmacgap": 0]
+            levels: ["com.apple.Music": 0.42, "com.google.Chrome": 0.93, "us.zoom.xos": 0]
         )
         controller.browserBridge.loadPreview(["com.google.Chrome": [
             BrowserTab(connectionID: 1, tabID: 1, title: "Lofi beats to code to – YouTube", host: "youtube.com",
