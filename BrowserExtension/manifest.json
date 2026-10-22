@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Volume Control Companion",
+  "version": "0.1.0",
+  "description": "Lets the Volume Control menu bar app list and adjust the volume of individual browser tabs.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0xJOKdiwUaGP31UX4ymDdDahoMtPjgvRJ+Pgmz1shqXe+AazGqfpRAo06L5LW7Fknc1lzlktmBpJq1GiP4bUXIZhJbLlIfLO/4NljAOQQHwoPUQ6T9fG/ZX8HMI9NQGx23hZUt0qzqwRUwhwj+QJ4ryXZZ8lEdZ8u7Ip/njUPvO6nXGlk29B4H57P8TM3TJ4FbnulT78fY4JKo1S7sOqejcu9VixDi+nA92V0a1u2bdMWZ6rQf1FvrN17eAeEZ7zmK3bqZ1YwtDPKfs4D5YfWNdxtlCaFL4PFuFdREfUsNbr4LfZ0OtuXsuyrnlzUkY83K91uwiy5LiW/Ir/SzNfSwIDAQAB",
+  "minimum_chrome_version": "111",
+  "permissions": ["tabs", "nativeMessaging", "storage", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["page.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_about_blank": true,
+      "world": "MAIN"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["bridge.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_about_blank": true
+    }
+  ]
+}
