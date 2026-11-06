@@ -54,7 +54,10 @@ struct MenuContentView: View {
         .fixedSize(horizontal: false, vertical: true)
         .background(GeometryReader { proxy in
             WindowVisibilityReader(contentSize: proxy.size) { isVisible in
-                if isVisible { controller.refreshPermission() }
+                if isVisible {
+                    controller.refreshPermission()
+                    controller.refreshProcesses()
+                }
                 controller.setMetering(isVisible)
             }
         })

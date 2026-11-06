@@ -9,13 +9,17 @@ struct AudioProcess: Hashable {
 }
 
 /// Tracks Core Audio's process objects and whether each one is currently sending audio to an output.
+///
+/// On macOS 26+, listeners for `kAudioProcessPropertyIsRunningOutput` often never fire even though
+/// reads are correct. `kAudioProcessPropertyIsRunning` does notify, so we listen to that and
+/// re-read the output flag on every wakeup.
 @MainActor
 final class AudioProcessMonitor {
     var onChange: (@MainActor () -> Void)?
     private(set) var processes: [AudioObjectID: AudioProcess] = [:]
 
     private var listListener: PropertyListener?
-    private var outputListeners: [AudioObjectID: PropertyListener] = [:]
+    private var runningListeners: [AudioObjectID: PropertyListener] = [:]
     private var ignored: Set<AudioObjectID> = []
     private let ownPID = getpid()
 
@@ -31,8 +35,14 @@ final class AudioProcessMonitor {
 
     func stop() {
         listListener?.invalidate()
-        outputListeners.values.forEach { $0.invalidate() }
-        outputListeners = [:]
+        runningListeners.values.forEach { $0.invalidate() }
+        runningListeners = [:]
+    }
+
+    /// Re-enumerates process objects and re-reads output-running state.
+    /// Useful when the menu opens, in case a Core Audio listener was missed.
+    func refresh() {
+        refreshList()
     }
 
     private func refreshList() {
@@ -42,14 +52,26 @@ final class AudioProcessMonitor {
             of: AudioObjectID.self
         )) ?? []
         let current = Set(ids)
+        var changed = false
 
         for gone in Set(processes.keys).subtracting(current) {
-            outputListeners.removeValue(forKey: gone)?.invalidate()
+            runningListeners.removeValue(forKey: gone)?.invalidate()
             processes[gone] = nil
+            changed = true
         }
         ignored.formIntersection(current)
 
-        for id in ids where processes[id] == nil && !ignored.contains(id) {
+        for id in ids {
+            if var existing = processes[id] {
+                let running = Self.isRunningOutput(id)
+                if running != existing.isRunningOutput {
+                    existing.isRunningOutput = running
+                    processes[id] = existing
+                    changed = true
+                }
+                continue
+            }
+            guard !ignored.contains(id) else { continue }
             guard let pid = try? AudioObject.read(id, kAudioProcessPropertyPID, default: pid_t(-1)),
                   pid > 0, pid != ownPID else {
                 ignored.insert(id)
@@ -62,14 +84,18 @@ final class AudioProcessMonitor {
                 bundleID: bundleID,
                 isRunningOutput: Self.isRunningOutput(id)
             )
-            outputListeners[id] = PropertyListener(
+            // IsRunning is the reliable change notification on recent macOS; we still *read*
+            // IsRunningOutput to decide whether the process is playing to an output.
+            runningListeners[id] = PropertyListener(
                 object: id,
-                selector: kAudioProcessPropertyIsRunningOutput
+                selector: kAudioProcessPropertyIsRunning
             ) { [weak self] in
                 self?.refreshOutputState(of: id)
             }
+            changed = true
         }
-        onChange?()
+
+        if changed { onChange?() }
     }
 
     private func refreshOutputState(of id: AudioObjectID) {
