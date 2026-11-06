@@ -180,6 +180,13 @@ final class AudioController {
         reconcile()
     }
 
+    /// Re-scan Core Audio process objects. Call when the menu opens so rows update even if a
+    /// property listener was missed (common for IsRunningOutput on macOS 26+).
+    func refreshProcesses() {
+        guard !isPreview else { return }
+        processMonitor.refresh()
+    }
+
     func dismissError() {
         errorMessage = nil
     }
